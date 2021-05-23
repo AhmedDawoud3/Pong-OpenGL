@@ -1,14 +1,18 @@
 #include <iostream>
 #include <GLFW/glfw3.h>
-
+#include <stdlib.h>
 using namespace std;
 void DrawRectangle(float  x, float y, int WIDTH, int HEIGHT);
+
 void HandleKeyboard(GLFWwindow* window);
+
 class gameManager {
 public:
 	float WIDTH = 1280;
 	float HEIGHT = 720;
 };
+
+gameManager game;
 
 class Player {
 public:
@@ -28,9 +32,9 @@ public:
 		y += dy * dt;
 
 		if (y < -height / 2) {
-			y = 720 - height / 2;
+			y = game.HEIGHT - height / 2;
 		}
-		if (y > 720 - height / 2) {
+		if (y > game.HEIGHT - height / 2) {
 			y = -height / 2;
 		}
 		dy *= 0.5;
@@ -40,19 +44,54 @@ public:
 	}
 };
 
+class Ball {
+public:
+	float x;
+	float y;
+	float width;
+	float height;
+	float dx;
+	float dy = 0;
+	void init(float xX, float yY, float wWidth, float hHeight) {
+		x = xX;
+		y = yY;
+		width = wWidth;
+		height = hHeight;
+		dx = -630 + (std::rand() % (630 + 630 + 1));
+		dy = -630 + (std::rand() % (630 + 630 + 1));
+	}
+	void Update(double dt) {
+		x += dx * dt;
+		y += dy * dt;
+		if (y < height / 2) {
+			dy = -dy;
+		}
+		if (y > game.HEIGHT - height / 2) {
+			dy = -dy;
+		}
+	}
+	void Render() {
+		DrawRectangle(x, y, width, height);
+	}
+};
+bool CheckCollision(Player player, Ball ball);
 
-gameManager game;
+
 Player player1;
 Player player2;
+Ball ball;
 
 int main(void)
 {
+	srand(time(NULL));
+
 	double dt;
 
 	GLFWwindow* window;
 
-	player1.init(15, 360, 15, 60);
-	player2.init(game.WIDTH - 30, 360, 15, 60);
+	player1.init(15, 360, 15, 120);
+	player2.init(game.WIDTH - 30, 360, 15, 120);
+	ball.init(game.WIDTH / 2, game.HEIGHT / 2, 15, 15);
 
 	/* Initialize the library */
 	if (!glfwInit())
@@ -84,13 +123,20 @@ int main(void)
 
 		/* Update*/
 		HandleKeyboard(window);
+		if (CheckCollision(player1, ball) || CheckCollision(player2, ball)) {
+			ball.dx = -ball.dx;
+			ball.x += ball.dx * dt;
+		}
+
 		player1.Update(dt);
 		player2.Update(dt);
-
+		ball.Update(dt);
+		//cout << true << "		" << false << endl;
 		/* Render here */
 		glColor3f(1.0F, 1.0F, 1.0F);
 		player1.Render();
 		player2.Render();
+		ball.Render();
 
 		/* Swap front and back buffers */
 		glfwSwapBuffers(window);
@@ -125,6 +171,9 @@ void HandleKeyboard(GLFWwindow* window)
 	{
 		player2.dy = -600;
 	}
+	if (glfwGetKey(window, GLFW_KEY_R) == GLFW_PRESS) {
+		ball.init(game.WIDTH / 2, game.HEIGHT / 2, 15, 15);
+	}
 
 }
 void DrawRectangle(float  x, float y, int WIDTH, int HEIGHT) {
@@ -140,4 +189,8 @@ void DrawRectangle(float  x, float y, int WIDTH, int HEIGHT) {
 
 	glRectf(startX, startY, endX, endY);
 
+}
+
+bool CheckCollision(Player player, Ball ball) {
+	return (ball.x + ball.width > player.x && ball.x < player.x + player.width && ball.y + ball.height > player.y && ball.y < player.y + player.height);
 }
